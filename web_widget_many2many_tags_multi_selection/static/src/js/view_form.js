@@ -8,9 +8,19 @@ odoo.define('web_widget_many2many_tags_multi_selection.multiple_tags', function 
 
     FormCommon.CompletionFieldMixin._search_create_popup = function(view, ids, context) {
         var self = this;
+
+        // Don't include already selected instances in the search domain
+        var domain = self.build_domain();
+        if (self.field.type == 'many2many') {
+            var selected_ids = self.get_search_blacklist();
+            if (selected_ids.length > 0) {
+                domain = new data.CompoundDomain(domain, ["!", ["id", "in", selected_ids]]);
+            }
+        }
+
         new FormCommon.SelectCreateDialog(this, {
             res_model: self.field.relation,
-            domain: self.build_domain(),
+            domain: domain,
             context: new data.CompoundContext(self.build_context(), context || {}),
             title: (view === 'search' ? _t("Search: ") : _t("Create: ")) + this.string,
             initial_ids: ids ? _.map(ids, function(x) {return x[0];}) : undefined,
@@ -26,14 +36,6 @@ odoo.define('web_widget_many2many_tags_multi_selection.multiple_tags', function 
                 self.focus();
             }
         }).open();
-        var domain = self.build_domain();
-
-        if (self.field.type == 'many2many') {
-            var selected_ids = self.get_search_blacklist();
-            if (selected_ids.length > 0) {
-                domain = new data.CompoundDomain(domain, ["!", ["id", "in", selected_ids]]);
-            }
-        }
 
     }
 });
